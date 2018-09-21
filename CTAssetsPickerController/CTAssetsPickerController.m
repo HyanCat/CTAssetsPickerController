@@ -147,8 +147,12 @@ NSString * const CTAssetsPickerDidDeselectAssetNotification = @"CTAssetsPickerDi
     if ([[PHAsset new] respondsToSelector:@selector(sourceType)])
     {
         NSMutableArray *subtypes = [NSMutableArray arrayWithArray:self.assetCollectionSubtypes];
-        [subtypes insertObject:@(PHAssetCollectionSubtypeSmartAlbumSelfPortraits) atIndex:4];
-        [subtypes insertObject:@(PHAssetCollectionSubtypeSmartAlbumScreenshots) atIndex:10];
+        if (@available(iOS 9.0, *)) {
+            [subtypes insertObject:@(PHAssetCollectionSubtypeSmartAlbumSelfPortraits) atIndex:4];
+            [subtypes insertObject:@(PHAssetCollectionSubtypeSmartAlbumScreenshots) atIndex:10];
+        } else {
+            // Fallback on earlier versions
+        }
         
         self.assetCollectionSubtypes = [NSArray arrayWithArray:subtypes];
     }

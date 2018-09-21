@@ -211,9 +211,9 @@
             {
                 PHFetchOptions *options = [PHFetchOptions new];
                 options.predicate = self.picker.assetsFetchOptions.predicate;
-                
-                if ([options respondsToSelector:@selector(setFetchLimit:)])
+                if (@available(iOS 9.0, *)) {
                     options.fetchLimit = 1;
+                }
                 
                 NSInteger count = [assetCollection ctassetPikcerCountOfAssetsFetchedWithOptions:options];
                 
