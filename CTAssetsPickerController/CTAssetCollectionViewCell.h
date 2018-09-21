@@ -26,13 +26,13 @@
 
 #import <UIKit/UIKit.h>
 #import <Photos/Photos.h>
-#import "CTAssetThumbnailStacks.h"
+#import "CTAssetThumbnailView.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface CTAssetCollectionViewCell : UITableViewCell
 
-@property (nonatomic, strong, readonly, nonnull) CTAssetThumbnailStacks *thumbnailStacks;
+@property (nonatomic, strong, readonly, nonnull) CTAssetThumbnailView *thumbnailView;
 
 @property (nonatomic, weak, nullable) UIFont *titleFont UI_APPEARANCE_SELECTOR;
 @property (nonatomic, strong, nullable) UIColor *titleTextColor UI_APPEARANCE_SELECTOR;
@@ -47,8 +47,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak, nullable) UIColor *selectedBackgroundColor UI_APPEARANCE_SELECTOR;
 
-
-- (instancetype)initWithThumbnailSize:(CGSize)size reuseIdentifier:(nullable NSString *)reuseIdentifier;
 - (void)bind:(nonnull PHAssetCollection *)collection count:(NSUInteger)count;
 
 @end

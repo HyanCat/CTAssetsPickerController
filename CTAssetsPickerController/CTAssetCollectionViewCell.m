@@ -35,9 +35,7 @@
 
 @interface CTAssetCollectionViewCell ()
 
-@property (nonatomic, assign) CGSize thumbnailSize;
-
-@property (nonatomic, strong) CTAssetThumbnailStacks *thumbnailStacks;
+@property (nonatomic, strong) CTAssetThumbnailView *thumbnailView;
 @property (nonatomic, strong) UIView *labelsView;
 @property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UILabel *countLabel;
@@ -50,17 +48,13 @@
 @end
 
 
-
-
-
 @implementation CTAssetCollectionViewCell
 
-- (instancetype)initWithThumbnailSize:(CGSize)size reuseIdentifier:(NSString *)reuseIdentifier;
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
-    if (self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier])
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self)
     {
-        _thumbnailSize = size;
-        
         _titleTextColor         = CTAssetCollectionViewCellTitleTextColor;
         _selectedTitleTextColor = CTAssetCollectionViewCellTitleTextColor;
         _countTextColor         = CTAssetCollectionViewCellCountTextColor;
@@ -85,10 +79,10 @@
 
 - (void)setupViews
 {
-    CTAssetThumbnailStacks *thumbnailStacks = [CTAssetThumbnailStacks newAutoLayoutView];
-    thumbnailStacks.thumbnailSize = self.thumbnailSize;
-    self.thumbnailStacks = thumbnailStacks;
-    
+    CTAssetThumbnailView *thumbnailView = [CTAssetThumbnailView newAutoLayoutView];
+    thumbnailView.backgroundColor = CTAssetsPikcerThumbnailBackgroundColor;
+    self.thumbnailView = thumbnailView;
+
     UILabel *titleLabel = [UILabel newAutoLayoutView];
     titleLabel.font = CTAssetCollectionViewCellTitleFont;
     titleLabel.textColor = self.titleTextColor;
@@ -104,7 +98,7 @@
     [labelsView addSubview:self.countLabel];
     self.labelsView = labelsView;
     
-    [self.contentView addSubview:self.thumbnailStacks];
+    [self.contentView addSubview:self.thumbnailView];
     [self.contentView addSubview:self.labelsView];
     
     UIImage *accessory = [UIImage ctassetsPickerImageNamed:@"DisclosureArrow"];
@@ -119,12 +113,8 @@
     NSString *imageName = [self placeHolderImageNameOfCollectionSubtype:self.collection.assetCollectionSubtype];
     UIImage *image = [UIImage ctassetsPickerImageNamed:imageName];
     image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-    
-    for (CTAssetThumbnailView *thumbnailView in self.thumbnailStacks.thumbnailViews)
-    {
-        [thumbnailView bind:nil assetCollection:nil];
-        thumbnailView.backgroundImage = image;
-    }
+
+    self.thumbnailView.backgroundImage = image;
 }
 
 - (NSString *)placeHolderImageNameOfCollectionSubtype:(PHAssetCollectionSubtype)subtype
@@ -226,8 +216,7 @@
 - (void)setHighlighted:(BOOL)highlighted animated:(BOOL)animated
 {
     [super setHighlighted:highlighted animated:animated];
-    [self.thumbnailStacks setHighlighted:highlighted];
-    
+
     self.titleLabel.textColor = (highlighted) ? self.selectedTitleTextColor : self.titleTextColor;
     self.countLabel.textColor = (highlighted) ? self.selectedCountTextColor : self.countTextColor;
     self.accessoryView.tintColor = (highlighted) ? self.selectedAccessoryColor : self.accessoryColor;
@@ -236,8 +225,7 @@
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
     [super setSelected:selected animated:animated];
-    [self.thumbnailStacks setHighlighted:selected];
-    
+
     self.titleLabel.textColor = (selected) ? self.selectedTitleTextColor : self.titleTextColor;
     self.countLabel.textColor = (selected) ? self.selectedCountTextColor : self.countTextColor;
     self.accessoryView.tintColor = (selected) ? self.selectedAccessoryColor : self.accessoryColor;
@@ -249,22 +237,22 @@
 {
     if (!self.didSetupConstraints)
     {
-        CGSize size = self.thumbnailSize;
-        CGFloat top = self.thumbnailStacks.edgeInsets.top;
+        CGSize size = CTAssetCollectionThumbnailSize;
+        CGFloat top = 4.0;
         size.height += top;
         
         [NSLayoutConstraint autoSetPriority:UILayoutPriorityRequired forConstraints:^{
-            [self.thumbnailStacks autoSetDimensionsToSize:size];
+            [self.thumbnailView autoSetDimensionsToSize:size];
         }];
                 
         [NSLayoutConstraint autoSetPriority:UILayoutPriorityDefaultHigh forConstraints:^{
-            [self.thumbnailStacks autoPinEdgesToSuperviewMarginsExcludingEdge:ALEdgeTrailing];
+            [self.thumbnailView autoPinEdgesToSuperviewMarginsExcludingEdge:ALEdgeTrailing];
         }];
         
         [self.labelsView autoAlignAxisToSuperviewAxis:ALAxisHorizontal];
         [self.labelsView autoPinEdge:ALEdgeLeading
                               toEdge:ALEdgeTrailing
-                              ofView:self.thumbnailStacks
+                              ofView:self.thumbnailView
                           withOffset:self.labelsView.layoutMargins.left
                             relation:NSLayoutRelationGreaterThanOrEqual];
         
@@ -301,7 +289,6 @@
     }
     
     [self setNeedsUpdateConstraints];
-    [self updateConstraintsIfNeeded];
 }
 
 

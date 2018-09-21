@@ -127,7 +127,6 @@
     self.backgroundView.hidden = (image != nil);
     
     [self setNeedsUpdateConstraints];
-    [self updateConstraintsIfNeeded];
 }
 
 - (void)setupOverlayForAsset:(PHAsset *)asset

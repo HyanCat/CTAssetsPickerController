@@ -55,10 +55,9 @@
 @property (nonatomic, assign) BOOL didShowDefaultAssetCollection;
 @property (nonatomic, assign) BOOL didSelectDefaultAssetCollection;
 
+@property (nonatomic, strong) NSMutableDictionary *imageCache;
+
 @end
-
-
-
 
 
 @implementation CTAssetCollectionViewController
@@ -69,6 +68,8 @@
     {
         _imageManager = [PHCachingImageManager new];
         [self addNotificationObserver];
+
+        _imageCache = [NSMutableDictionary dictionary];
     }
     
     return self;
@@ -417,39 +418,52 @@
     CTAssetCollectionViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     
     if (cell == nil)
-        cell = [[CTAssetCollectionViewCell alloc] initWithThumbnailSize:self.picker.assetCollectionThumbnailSize
-                                                            reuseIdentifier:cellIdentifier];
+        cell = [[CTAssetCollectionViewCell alloc] initWithStyle:UITableViewCellStyleDefault
+                                                reuseIdentifier:cellIdentifier];
     
     [cell bind:collection count:count];
-    [self requestThumbnailsForCell:cell assetCollection:collection];
-    
+    [self requestThumbnailForCell:cell assetCollection:collection];
+
     return cell;
 }
 
-- (void)requestThumbnailsForCell:(CTAssetCollectionViewCell *)cell assetCollection:(PHAssetCollection *)collection
+- (void)requestThumbnailForCell:(CTAssetCollectionViewCell *)cell assetCollection:(PHAssetCollection *)collection
 {
-    NSUInteger count    = cell.thumbnailStacks.thumbnailViews.count;
-    NSArray *assets     = [self posterAssetsFromAssetCollection:collection count:count];
-    CGSize targetSize   = [self.picker imageSizeForContainerSize:self.picker.assetCollectionThumbnailSize];
-    
-    for (NSUInteger index = 0; index < count; index++)
-    {
-        CTAssetThumbnailView *thumbnailView = [cell.thumbnailStacks thumbnailAtIndex:index];
-        thumbnailView.hidden = (assets.count > 0) ? YES : NO;
-        
-        if (index < assets.count)
-        {
-            PHAsset *asset = assets[index];
-            [self.imageManager ctassetsPickerRequestImageForAsset:asset
-                                         targetSize:targetSize
-                                        contentMode:PHImageContentModeAspectFill
-                                            options:self.picker.thumbnailRequestOptions
-                                      resultHandler:^(UIImage *image, NSDictionary *info){
-                                          [thumbnailView setHidden:NO];
-                                          [thumbnailView bind:image assetCollection:collection];
-                                      }];
-        }
+    CTAssetThumbnailView *thumbnailView = cell.thumbnailView;
+    UIImage *cachedImage = [self.imageCache objectForKey:collection];
+    if (cachedImage) {
+        [thumbnailView bind:cachedImage assetCollection:collection];
+        return;
     }
+
+    CGSize targetSize   = [self.picker imageSizeForContainerSize:self.picker.assetCollectionThumbnailSize];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        PHFetchOptions *options = [PHFetchOptions new];
+        options.predicate       = self.picker.assetsFetchOptions.predicate; // aligned specified predicate
+        options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
+
+        PHFetchResult *result = [PHAsset fetchKeyAssetsInAssetCollection:collection options:options];
+
+        if (result.count == 0) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [thumbnailView bind:nil asset:nil];
+            });
+            return;
+        }
+        PHAsset *asset = [self itemsFromFetchResult:result range:NSMakeRange(0, 1)].firstObject;
+        __weak typeof(self) weakSelf = self;
+        [self.imageManager ctassetsPickerRequestImageForAsset:asset
+                                                   targetSize:targetSize
+                                                  contentMode:PHImageContentModeAspectFill
+                                                      options:self.picker.thumbnailRequestOptions
+                                                resultHandler:^(UIImage *image, NSDictionary *info){
+                                                    dispatch_async(dispatch_get_main_queue(), ^{
+                                                        [weakSelf.imageCache setObject:image forKey:collection];
+                                                        [thumbnailView setHidden:NO];
+                                                        [thumbnailView bind:image assetCollection:collection];
+                                                    });
+                                                }];
+    });
 }
 
 - (NSArray *)posterAssetsFromAssetCollection:(PHAssetCollection *)collection count:(NSUInteger)count;

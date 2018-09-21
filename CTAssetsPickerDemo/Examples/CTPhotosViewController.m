@@ -46,6 +46,8 @@
             
             // assign options
             picker.assetsFetchOptions = fetchOptions;
+
+            picker.showsEmptyAlbums = NO;
             
             // to present picker as a form sheet in iPad
             if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
